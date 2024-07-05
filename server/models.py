@@ -9,9 +9,11 @@ class User(db.Model, SerializerMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, unique=True, nullable=False)
-    _password_hash = db.Column(db.String, nullable=False)
+    _password_hash = db.Column(db.String)
     image_url = db.Column(db.String)
     bio = db.Column(db.String)
+
+    recipes = db.relationship("Recipe", backref='user')
 
     @hybrid_property
     def password_hash(self):
@@ -32,27 +34,12 @@ class User(db.Model, SerializerMixin):
 
 class Recipe(db.Model, SerializerMixin):
     __tablename__ = 'recipes'
-
+    __table_args__ = (db.CheckConstraint("length(instructions) >= 50"),)
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
     instructions = db.Column(db.String, nullable=False)
     minutes_to_complete = db.Column(db.Integer, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    user = db.relationship('User', backref=db.backref('recipes', lazy=True))
-
-    @validates('title')
-    def validate_title(self, key, title):
-        if not title:
-            raise ValueError("Title must be present.")
-        return title
-
-    @validates('instructions')
-    def validate_instructions(self, key, instructions):
-        if not instructions:
-            raise ValueError("Instructions must be present.")
-        if len(instructions) < 50:
-            raise ValueError("Instructions must be at least 50 characters long.")
-        return instructions
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     def __repr__(self):
         return f'Recipe {self.title}, ID: {self.id}'
